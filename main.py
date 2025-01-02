@@ -186,7 +186,7 @@ def main():
         </style>
     """, unsafe_allow_html=True)
     
-    st.title("LatticeViz Pro")
+    st.title("Graph based lattices")
     
     # Sidebar
     with st.sidebar:
