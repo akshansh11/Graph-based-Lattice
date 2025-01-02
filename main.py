@@ -4,200 +4,202 @@ import networkx as nx
 import plotly.graph_objects as go
 from torch_geometric.data import Data
 import torch
-import pandas as pd
+import plotly.express as px
 
-def create_3d_lattice_viz(lattice_type="Simple Cubic"):
-    # Base coordinates for different lattice types
+def create_enhanced_lattice_viz(lattice_type="Simple Cubic"):
+    # Enhanced lattice configurations with better connectivity
     lattice_configs = {
         "Simple Cubic": {
             "nodes": [(0,0,0), (1,0,0), (0,1,0), (1,1,0),
                      (0,0,1), (1,0,1), (0,1,1), (1,1,1)],
-            "edges": [(0,1), (0,2), (1,3), (2,3), 
-                     (4,5), (4,6), (5,7), (6,7),
-                     (0,4), (1,5), (2,6), (3,7)]
+            "edges": [(0,1), (0,2), (0,4), (1,3), (1,5),
+                     (2,3), (2,6), (3,7), (4,5), (4,6),
+                     (5,7), (6,7)],
+            "colors": ['#4299e1']*8  # Blue nodes
         },
         "BCC": {
             "nodes": [(0,0,0), (1,0,0), (0,1,0), (1,1,0),
                      (0,0,1), (1,0,1), (0,1,1), (1,1,1),
-                     (0.5,0.5,0.5)],  # Center node
-            "edges": [(8,0), (8,1), (8,2), (8,3), 
-                     (8,4), (8,5), (8,6), (8,7)]
+                     (0.5,0.5,0.5)],
+            "edges": [(8,i) for i in range(8)] + [
+                     (0,1), (0,2), (0,4), (1,3), (1,5),
+                     (2,3), (2,6), (3,7), (4,5), (4,6),
+                     (5,7), (6,7)],
+            "colors": ['#4299e1']*8 + ['#48bb78']  # Blue + Green center
         },
-        "FCC": {
+        "Complex": {
             "nodes": [(0,0,0), (1,0,0), (0,1,0), (1,1,0),
                      (0,0,1), (1,0,1), (0,1,1), (1,1,1),
-                     (0.5,0.5,0), (0.5,0,0.5), (0,0.5,0.5)],
-            "edges": [(0,8), (1,8), (2,8), (3,8),
-                     (0,9), (1,9), (4,9), (5,9),
-                     (0,10), (2,10), (4,10), (6,10)]
+                     (0.5,0.5,0), (0.5,0,0.5), (0,0.5,0.5),
+                     (0.5,0.5,1), (0.5,1,0.5), (1,0.5,0.5)],
+            "edges": [(i,j) for i in range(8) for j in range(8,14) 
+                     if np.sum(np.abs(np.array(nodes[i]) - np.array(nodes[j]))) < 1.1],
+            "colors": ['#4299e1']*8 + ['#48bb78']*6  # Blue corners + Green centers
         }
     }
     
     nodes = lattice_configs[lattice_type]["nodes"]
     edges = lattice_configs[lattice_type]["edges"]
+    node_colors = lattice_configs[lattice_type]["colors"]
     
-    # Create traces for visualization
-    edge_x = []
-    edge_y = []
-    edge_z = []
+    # Create enhanced traces
+    edge_trace = go.Scatter3d(
+        x=[], y=[], z=[],
+        line=dict(width=3, color='#2d3748'),  # Darker edges
+        mode='lines',
+        hoverinfo='none'
+    )
     
+    # Add edges
     for edge in edges:
         x0, y0, z0 = nodes[edge[0]]
         x1, y1, z1 = nodes[edge[1]]
-        edge_x.extend([x0, x1, None])
-        edge_y.extend([y0, y1, None])
-        edge_z.extend([z0, z1, None])
+        edge_trace['x'] += (x0, x1, None)
+        edge_trace['y'] += (y0, y1, None)
+        edge_trace['z'] += (z0, z1, None)
     
-    # Create edge trace
-    edge_trace = go.Scatter3d(
-        x=edge_x, y=edge_y, z=edge_z,
-        line=dict(width=2, color='#888'),
-        hoverinfo='none',
-        mode='lines')
-
-    # Create node trace
-    node_x = [node[0] for node in nodes]
-    node_y = [node[1] for node in nodes]
-    node_z = [node[2] for node in nodes]
-    
+    # Create enhanced node trace
     node_trace = go.Scatter3d(
-        x=node_x, y=node_y, z=node_z,
+        x=[n[0] for n in nodes],
+        y=[n[1] for n in nodes],
+        z=[n[2] for n in nodes],
         mode='markers',
-        hoverinfo='text',
         marker=dict(
-            size=8,
-            color=['#1f77b4' if i < 8 else '#d62728' for i in range(len(nodes))],
+            size=12,
+            color=node_colors,
+            line=dict(width=1, color='#ffffff'),
             symbol='circle',
-            line=dict(width=1, color='#888')
-        ))
+            opacity=0.9
+        ),
+        hoverinfo='text'
+    )
     
-    # Create figure
+    # Create figure with enhanced styling
     fig = go.Figure(data=[edge_trace, node_trace])
-    
-    # Update layout
     fig.update_layout(
-        title=f'{lattice_type} Lattice Structure',
+        title="",
         showlegend=False,
         scene=dict(
-            xaxis=dict(showbackground=False),
-            yaxis=dict(showbackground=False),
-            zaxis=dict(showbackground=False),
-            aspectmode='cube'
+            xaxis=dict(showbackground=False, showgrid=True, zeroline=True, 
+                      gridcolor='#E2E8F0', zerolinecolor='#E2E8F0'),
+            yaxis=dict(showbackground=False, showgrid=True, zeroline=True,
+                      gridcolor='#E2E8F0', zerolinecolor='#E2E8F0'),
+            zaxis=dict(showbackground=False, showgrid=True, zeroline=True,
+                      gridcolor='#E2E8F0', zerolinecolor='#E2E8F0'),
+            aspectmode='cube',
+            camera=dict(
+                up=dict(x=0, y=0, z=1),
+                center=dict(x=0, y=0, z=0),
+                eye=dict(x=1.5, y=1.5, z=1.5)
+            ),
         ),
-        margin=dict(l=0, r=0, t=40, b=0)
+        margin=dict(l=0, r=0, t=0, b=0)
     )
     
     return fig
 
-def create_graph_representation(lattice_type):
-    """Create graph representation for different lattice types"""
-    G = nx.Graph()
+def create_enhanced_adjacency(G):
+    adj_matrix = nx.to_numpy_array(G)
+    fig = go.Figure(data=go.Heatmap(
+        z=adj_matrix,
+        colorscale=[[0, '#1a365d'], [1, '#ffd700']],  # Dark blue to gold
+        showscale=False
+    ))
     
-    if lattice_type == "Simple Cubic":
-        nodes = [(0,0,0), (1,0,0), (0,1,0), (1,1,0),
-                (0,0,1), (1,0,1), (0,1,1), (1,1,1)]
-        edges = [(0,1), (0,2), (1,3), (2,3), 
-                (4,5), (4,6), (5,7), (6,7),
-                (0,4), (1,5), (2,6), (3,7)]
-    elif lattice_type == "BCC":
-        nodes = [(0,0,0), (1,0,0), (0,1,0), (1,1,0),
-                (0,0,1), (1,0,1), (0,1,1), (1,1,1),
-                (0.5,0.5,0.5)]
-        edges = [(8,i) for i in range(8)]
-    else:  # FCC
-        nodes = [(0,0,0), (1,0,0), (0,1,0), (1,1,0),
-                (0,0,1), (1,0,1), (0,1,1), (1,1,1),
-                (0.5,0.5,0), (0.5,0,0.5), (0,0.5,0.5)]
-        edges = [(0,8), (1,8), (2,8), (3,8),
-                (0,9), (1,9), (4,9), (5,9),
-                (0,10), (2,10), (4,10), (6,10)]
-    
-    G.add_nodes_from(range(len(nodes)))
-    G.add_edges_from(edges)
-    
-    return G, nodes, edges
-
-def main():
-    st.set_page_config(layout="wide", page_title="Lattice Structure Explorer")
-    
-    st.title("Interactive Lattice Structure Explorer")
-    
-    # Sidebar
-    st.sidebar.title("Controls")
-    lattice_type = st.sidebar.selectbox(
-        "Select Lattice Type",
-        ["Simple Cubic", "BCC", "FCC"]
+    fig.update_layout(
+        xaxis=dict(showgrid=False, zeroline=False),
+        yaxis=dict(showgrid=False, zeroline=False),
+        height=400
     )
     
-    # Create two columns
-    col1, col2 = st.columns(2)
+    return fig
+
+def display_metrics(G):
+    cols = st.columns(3)
+    metrics = {
+        "Nodes": G.number_of_nodes(),
+        "Edges": G.number_of_edges(),
+        "Avg Degree": f"{sum(dict(G.degree()).values())/G.number_of_nodes():.2f}",
+        "Density": f"{nx.density(G):.3f}",
+        "Connected": "Yes" if nx.is_connected(G) else "No",
+        "Components": nx.number_connected_components(G)
+    }
     
-    with col1:
-        st.subheader("3D Visualization")
-        fig = create_3d_lattice_viz(lattice_type)
-        st.plotly_chart(fig, use_container_width=True)
-        
-    with col2:
-        st.subheader("Graph Properties")
-        G, nodes, edges = create_graph_representation(lattice_type)
-        
-        # Display basic graph properties
-        st.write(f"Number of nodes: {G.number_of_nodes()}")
-        st.write(f"Number of edges: {G.number_of_edges()}")
-        st.write(f"Average degree: {sum(dict(G.degree()).values())/G.number_of_nodes():.2f}")
-        
-        # Display connectivity information
-        st.write("Connectivity Analysis:")
-        st.write(f"Is connected: {nx.is_connected(G)}")
-        st.write(f"Graph density: {nx.density(G):.3f}")
-        
-        # Create a heatmap of the adjacency matrix
-        adj_matrix = nx.to_numpy_array(G)
-        fig_heatmap = go.Figure(data=go.Heatmap(
-            z=adj_matrix,
-            colorscale='Viridis',
-            showscale=True
-        ))
-        fig_heatmap.update_layout(
-            title='Adjacency Matrix',
-            xaxis_title='Node Index',
-            yaxis_title='Node Index'
+    for i, (metric, value) in enumerate(metrics.items()):
+        with cols[i % 3]:
+            st.metric(label=metric, value=value)
+
+def main():
+    st.set_page_config(layout="wide", page_title="LatticeViz Pro")
+    
+    # Custom CSS
+    st.markdown("""
+        <style>
+        .stApp {
+            background-color: #f8fafc;
+        }
+        .main > div {
+            padding: 2rem;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    st.title("LatticeViz Pro: Advanced Lattice Analysis")
+    
+    # Enhanced sidebar
+    with st.sidebar:
+        st.header("Lattice Configuration")
+        lattice_type = st.selectbox(
+            "Select Structure Type",
+            ["Simple Cubic", "BCC", "Complex"]
         )
-        st.plotly_chart(fig_heatmap, use_container_width=True)
+        
+        st.markdown("---")
+        st.markdown("### Settings")
+        show_metrics = st.checkbox("Show Metrics", value=True)
+        show_adjacency = st.checkbox("Show Adjacency Matrix", value=True)
     
-    # Additional Information Section
-    st.markdown("---")
-    st.subheader("Lattice Properties")
-    
-    # Create three columns for properties
-    col1, col2, col3 = st.columns(3)
+    # Main content
+    col1, col2 = st.columns([3, 2])
     
     with col1:
-        st.markdown("**Structural Properties**")
-        properties = {
-            "Simple Cubic": "Simple cubic arrangement with 8 vertices",
-            "BCC": "Body-centered cubic with additional center node",
-            "FCC": "Face-centered cubic with nodes at face centers"
-        }
-        st.write(properties[lattice_type])
-        
+        st.subheader("3D Structure Visualization")
+        fig = create_enhanced_lattice_viz(lattice_type)
+        st.plotly_chart(fig, use_container_width=True)
+    
     with col2:
-        st.markdown("**Applications**")
-        applications = {
-            "Simple Cubic": "Basic structural components, scaffolds",
-            "BCC": "Enhanced mechanical properties, energy absorption",
-            "FCC": "High strength-to-weight ratio applications"
-        }
-        st.write(applications[lattice_type])
+        if show_metrics:
+            st.subheader("Structure Metrics")
+            G, _, _ = create_graph_representation(lattice_type)
+            display_metrics(G)
         
-    with col3:
-        st.markdown("**Mechanical Behavior**")
-        mechanics = {
-            "Simple Cubic": "Regular deformation pattern, predictable behavior",
-            "BCC": "Better load distribution, improved strength",
-            "FCC": "High packing density, superior mechanical properties"
-        }
-        st.write(mechanics[lattice_type])
+        if show_adjacency:
+            st.subheader("Adjacency Pattern")
+            adj_fig = create_enhanced_adjacency(G)
+            st.plotly_chart(adj_fig, use_container_width=True)
+    
+    # Properties section
+    st.markdown("---")
+    with st.expander("Structure Properties", expanded=True):
+        properties_col1, properties_col2 = st.columns(2)
+        
+        with properties_col1:
+            st.markdown("### Mechanical Properties")
+            properties = {
+                "Simple Cubic": "Basic cubic structure with uniform properties",
+                "BCC": "Enhanced load distribution with center support",
+                "Complex": "Advanced topology with optimized strength distribution"
+            }
+            st.write(properties[lattice_type])
+        
+        with properties_col2:
+            st.markdown("### Applications")
+            applications = {
+                "Simple Cubic": "Fundamental structural elements",
+                "BCC": "Load-bearing applications",
+                "Complex": "Optimized mechanical performance"
+            }
+            st.write(applications[lattice_type])
 
 if __name__ == "__main__":
     main()
