@@ -49,7 +49,7 @@ LATTICE_CONFIGS = {
         (13,1), (13,3), (13,5), (13,7)   # Right face connections
     ],
     "colors": ['#4299e1']*8 + ['#48bb78']*6  # Blue corners + Green face centers
-}
+    },
     "Octet": {
         "nodes": [(0,0,0), (1,0,0), (0,1,0), (1,1,0),
                  (0,0,1), (1,0,1), (0,1,1), (1,1,1),
