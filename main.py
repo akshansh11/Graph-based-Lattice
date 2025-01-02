@@ -200,7 +200,7 @@ def display_metrics(G):
 def main():
     # Page configuration
     st.set_page_config(
-        page_title="Graph-based Lattice Explorer",
+        page_title="Graph-based Lattice Structures",
         page_icon="🔷",
         layout="wide"
     )
